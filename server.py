@@ -8,13 +8,13 @@ Uses Streamable HTTP transport for remote deployment.
 import asyncio
 import os
 from dotenv import load_dotenv
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 from browser_use import Agent
 from langchain_openai import ChatOpenAI
 
 load_dotenv()
 
-mcp = FastMCP("browser-use-mcp")
+mcp = MCPServer("browser-use-mcp")
 
 @mcp.tool()
 async def browse_web(task: str, model: str = "gpt-4o", max_steps: int = 100) -> str:
