@@ -16,12 +16,12 @@ load_dotenv()
 mcp = MCPServer("browser-use-mcp")
 
 @mcp.tool()
-async def browse_web(task: str, model: str = "gpt-4o", max_steps: int = 100) -> str:
+async def browse_web(task: str, model: str = "gpt-4.1-mini", max_steps: int = 100) -> str:
     """Browse the web autonomously to complete a task. The AI agent will navigate pages, click elements, fill forms, and extract information as needed.
 
     Args:
         task: The task to complete (e.g., 'Find the latest news about AI', 'Go to example.com and extract pricing info')
-        model: LLM model to use (default: 'gpt-4o'). Examples: 'gpt-4o', 'gpt-4o-mini'
+        model: LLM model to use (default: 'gpt-4.1-mini'). Examples: 'gpt-4.1-mini', 'gpt-4.1'
         max_steps: Maximum number of steps to execute (default: 100)
     """
     if not task:
