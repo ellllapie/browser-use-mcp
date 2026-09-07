@@ -27,8 +27,29 @@ cp .env.example .env
 
 ## Environment Variables
 
-- `BROWSER_USE_API_KEY`: Your Browser Use API key (get from [Browser Use Cloud](https://cloud.browser-use.com))
-- Or use provider keys: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`
+### Option 1: Use with relay service (e.g., 灵眸)
+```bash
+OPENAI_API_KEY=your_relay_api_key
+OPENAI_BASE_URL=https://your-relay-service.com/v1
+```
+
+### Option 2: Use official OpenAI API
+```bash
+OPENAI_API_KEY=your_openai_api_key
+# OPENAI_BASE_URL not needed
+```
+
+### Option 3: Use Browser Use Cloud
+```bash
+BROWSER_USE_API_KEY=your_browser_use_api_key
+```
+
+### Option 4: Use other providers
+```bash
+ANTHROPIC_API_KEY=your_anthropic_api_key
+# or
+GOOGLE_API_KEY=your_google_api_key
+```
 
 ## Usage
 
