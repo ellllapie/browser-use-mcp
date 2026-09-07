@@ -2,7 +2,7 @@
 MCP Server for browser-use
 
 Wraps browser-use AI web agent as MCP tools.
-Supports custom OpenAI base_url for relay services like 灵眸.
+Supports custom Anthropic base_url for relay services like 灵眸.
 Uses Streamable HTTP transport for remote deployment.
 """
 import asyncio
@@ -10,11 +10,17 @@ import os
 from dotenv import load_dotenv
 from mcp.server.mcpserver import MCPServer
 from browser_use import Agent
-from langchain_anthropic import ChatAnthropic
+from langchain_anthropic import ChatAnthropic as _ChatAnthropic
 
 load_dotenv()
 
 mcp = MCPServer("browser-use-mcp")
+
+
+class ChatAnthropic(_ChatAnthropic):
+    """Wrapper that adds 'provider' attribute needed by browser-use."""
+    provider: str = "anthropic"
+
 
 @mcp.tool()
 async def browse_web(task: str, model: str = "claude-haiku-4-5-20251001", max_steps: int = 100) -> str:
