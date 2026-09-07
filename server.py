@@ -54,13 +54,48 @@ async def browse_web(task: str, model: str = "claude-haiku-4-5-20251001", max_st
 
         history = await agent.run(max_steps=max_steps)
 
-        # Extract final result
-        final_result = history.final_result()
+        # Try multiple ways to extract results
+        results = []
 
+        # Method 1: final_result()
+        final_result = history.final_result()
         if final_result:
-            result_text = f"Task completed.\n\nResult:\n{final_result}"
+            results.append(f"Final Result:\n{final_result}")
+
+        # Method 2: Scan all history items for extracted content and done results
+        for i, item in enumerate(history.history):
+            if item.result:
+                for r in item.result:
+                    if r.extracted_content:
+                        results.append(f"Step {i} extracted:\n{r.extracted_content}")
+                    if r.is_done and hasattr(r, 'text') and r.text:
+                        results.append(f"Done text:\n{r.text}")
+
+        # Method 3: Collect model output memories and next_goals
+        memories = []
+        for item in history.history:
+            if item.model_output:
+                state = item.model_output.current_state
+                if hasattr(state, 'memory') and state.memory:
+                    memories.append(state.memory)
+
+        if results:
+            result_text = "\n\n".join(results)
+        elif memories:
+            result_text = "No explicit result extracted, but the agent recorded:\n" + "\n".join(memories)
         else:
-            result_text = "Task completed but no final result was extracted."
+            # Last resort: dump action history summary
+            actions_summary = []
+            for i, item in enumerate(history.history):
+                if item.model_output and item.model_output.action:
+                    for action in item.model_output.action:
+                        action_data = action.model_dump(exclude_unset=True)
+                        action_name = next(iter(action_data.keys()), "unknown")
+                        actions_summary.append(f"Step {i}: {action_name}")
+            if actions_summary:
+                result_text = "Task ran but no result was captured. Actions taken:\n" + "\n".join(actions_summary)
+            else:
+                result_text = "Task completed but no result was extracted."
 
         result_text += f"\n\nCompleted in {len(history.history)} steps."
         return result_text
