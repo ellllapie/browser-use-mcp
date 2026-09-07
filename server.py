@@ -2,16 +2,17 @@
 MCP Server for browser-use
 
 Wraps browser-use AI web agent as MCP tools.
+Supports custom OpenAI base_url for relay services like 灵眸.
 """
 import asyncio
 import os
-import sys
 from dotenv import load_dotenv
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent
 
-from browser_use import Agent, ChatBrowserUse
+from browser_use import Agent
+from langchain_openai import ChatOpenAI
 
 load_dotenv()
 
@@ -32,8 +33,8 @@ async def list_tools() -> list[Tool]:
                     },
                     "model": {
                         "type": "string",
-                        "description": "LLM model to use (default: 'openai/gpt-5.5'). Examples: 'anthropic/claude-opus-4-8', 'bu-2-0-mini-preview'",
-                        "default": "openai/gpt-5.5"
+                        "description": "LLM model to use (default: 'gpt-4o'). Examples: 'gpt-4o', 'gpt-4o-mini', 'claude-opus-4-8'",
+                        "default": "gpt-4o"
                     },
                     "max_steps": {
                         "type": "integer",
@@ -50,17 +51,37 @@ async def list_tools() -> list[Tool]:
 async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     if name == "browse_web":
         task = arguments.get("task")
-        model = arguments.get("model", "openai/gpt-5.5")
+        model = arguments.get("model", "gpt-4o")
         max_steps = arguments.get("max_steps", 100)
         
         if not task:
             return [TextContent(type="text", text="Error: task parameter is required")]
         
         try:
+            # Get OpenAI config from environment
+            api_key = os.getenv("OPENAI_API_KEY")
+            base_url = os.getenv("OPENAI_BASE_URL")
+            
+            if not api_key:
+                return [TextContent(
+                    type="text",
+                    text="Error: OPENAI_API_KEY environment variable is not set"
+                )]
+            
+            # Create LLM with custom base_url if provided
+            llm_kwargs = {
+                "model": model,
+                "api_key": api_key,
+            }
+            if base_url:
+                llm_kwargs["base_url"] = base_url
+            
+            llm = ChatOpenAI(**llm_kwargs)
+            
             # Create agent
             agent = Agent(
                 task=task,
-                llm=ChatBrowserUse(model=model),
+                llm=llm,
             )
             
             # Run the agent and get history
