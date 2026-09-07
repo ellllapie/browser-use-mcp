@@ -9,8 +9,7 @@ import asyncio
 import os
 from dotenv import load_dotenv
 from mcp.server.mcpserver import MCPServer
-from browser_use import Agent
-from langchain_openai import ChatOpenAI
+from browser_use import Agent, ChatOpenAI
 
 load_dotenv()
 
