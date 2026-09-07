@@ -2,7 +2,7 @@
 MCP Server for browser-use
 
 Wraps browser-use AI web agent as MCP tools.
-Uses OpenAI-compatible relay (灵眸) to call Claude models.
+Uses OpenAI-compatible relay to call LLM models.
 Uses Streamable HTTP transport for remote deployment.
 """
 import asyncio
@@ -16,27 +16,26 @@ load_dotenv()
 mcp = MCPServer("browser-use-mcp")
 
 @mcp.tool()
-async def browse_web(task: str, model: str = "claude-haiku-4-5-20251001", max_steps: int = 100) -> str:
+async def browse_web(task: str, model: str = "qwen-plus", max_steps: int = 100) -> str:
     """Browse the web autonomously to complete a task. The AI agent will navigate pages, click elements, fill forms, and extract information as needed.
 
     Args:
         task: The task to complete (e.g., 'Find the latest news about AI', 'Go to example.com and extract pricing info')
-        model: LLM model to use (default: 'claude-haiku-4-5-20251001'). Examples: 'claude-haiku-4-5-20251001', 'claude-sonnet-4-6', 'claude-sonnet-4-5'
+        model: LLM model to use (default: 'qwen-plus'). Examples: 'qwen-plus', 'qwen-max', 'deepseek-chat'
         max_steps: Maximum number of steps to execute (default: 100)
     """
     if not task:
         return "Error: task parameter is required"
 
     try:
-        # Get API config from environment (OpenAI-compatible relay like 灵眸)
+        # Get API config from environment (OpenAI-compatible endpoint)
         api_key = os.getenv("OPENAI_API_KEY")
         base_url = os.getenv("OPENAI_BASE_URL")
 
         if not api_key:
             return "Error: OPENAI_API_KEY environment variable is not set"
 
-        # Use ChatOpenAI with OpenAI-compatible relay endpoint
-        # Even for Claude models, relay services use /v1/chat/completions format
+        # Use ChatOpenAI with OpenAI-compatible endpoint
         llm_kwargs = {
             "model": model,
             "api_key": api_key,
