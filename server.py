@@ -10,17 +10,11 @@ import os
 from dotenv import load_dotenv
 from mcp.server.mcpserver import MCPServer
 from browser_use import Agent
-from langchain_anthropic import ChatAnthropic as _ChatAnthropic
+from browser_use.llm.anthropic.chat import ChatAnthropic
 
 load_dotenv()
 
 mcp = MCPServer("browser-use-mcp")
-
-
-class ChatAnthropic(_ChatAnthropic):
-    """Wrapper that adds 'provider' attribute needed by browser-use."""
-    provider: str = "anthropic"
-
 
 @mcp.tool()
 async def browse_web(task: str, model: str = "claude-haiku-4-5-20251001", max_steps: int = 100) -> str:
@@ -42,7 +36,7 @@ async def browse_web(task: str, model: str = "claude-haiku-4-5-20251001", max_st
         if not api_key:
             return "Error: ANTHROPIC_API_KEY environment variable is not set"
 
-        # Create LLM with custom base_url if provided (for relay services)
+        # Create LLM using browser-use's own ChatAnthropic (has provider attribute)
         llm_kwargs = {
             "model": model,
             "api_key": api_key,
