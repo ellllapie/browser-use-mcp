@@ -5,6 +5,7 @@ Wraps browser-use AI web agent as MCP tools.
 """
 import asyncio
 import os
+import sys
 from dotenv import load_dotenv
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
@@ -33,6 +34,11 @@ async def list_tools() -> list[Tool]:
                         "type": "string",
                         "description": "LLM model to use (default: 'openai/gpt-5.5'). Examples: 'anthropic/claude-opus-4-8', 'bu-2-0-mini-preview'",
                         "default": "openai/gpt-5.5"
+                    },
+                    "max_steps": {
+                        "type": "integer",
+                        "description": "Maximum number of steps to execute (default: 100)",
+                        "default": 100
                     }
                 },
                 "required": ["task"]
@@ -45,6 +51,7 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
     if name == "browse_web":
         task = arguments.get("task")
         model = arguments.get("model", "openai/gpt-5.5")
+        max_steps = arguments.get("max_steps", 100)
         
         if not task:
             return [TextContent(type="text", text="Error: task parameter is required")]
@@ -56,21 +63,30 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                 llm=ChatBrowserUse(model=model),
             )
             
-            # Run the agent
-            history = await agent.run()
+            # Run the agent and get history
+            history = await agent.run(max_steps=max_steps)
             
-            # Extract result from history
-            result = history.final_result() if hasattr(history, 'final_result') else str(history)
+            # Extract final result from history
+            final_result = history.final_result()
+            
+            if final_result:
+                result_text = f"Task completed.\n\nResult:\n{final_result}"
+            else:
+                result_text = "Task completed but no final result was extracted."
+            
+            # Add step count info
+            result_text += f"\n\nCompleted in {len(history.history)} steps."
             
             return [TextContent(
                 type="text",
-                text=f"Task completed successfully.\n\nResult:\n{result}"
+                text=result_text
             )]
             
         except Exception as e:
+            error_msg = f"Error executing browser task: {type(e).__name__}: {str(e)}"
             return [TextContent(
                 type="text",
-                text=f"Error executing browser task: {str(e)}"
+                text=error_msg
             )]
     
     return [TextContent(type="text", text=f"Unknown tool: {name}")]
