@@ -2,15 +2,14 @@
 MCP Server for browser-use
 
 Wraps browser-use AI web agent as MCP tools.
-Supports custom Anthropic base_url for relay services like 灵眸.
+Uses OpenAI-compatible relay (灵眸) to call Claude models.
 Uses Streamable HTTP transport for remote deployment.
 """
 import asyncio
 import os
 from dotenv import load_dotenv
 from mcp.server.mcpserver import MCPServer
-from browser_use import Agent
-from browser_use.llm.anthropic.chat import ChatAnthropic
+from browser_use import Agent, ChatOpenAI
 
 load_dotenv()
 
@@ -29,14 +28,15 @@ async def browse_web(task: str, model: str = "claude-haiku-4-5-20251001", max_st
         return "Error: task parameter is required"
 
     try:
-        # Get Anthropic config from environment
-        api_key = os.getenv("ANTHROPIC_API_KEY")
-        base_url = os.getenv("ANTHROPIC_BASE_URL")
+        # Get API config from environment (OpenAI-compatible relay like 灵眸)
+        api_key = os.getenv("OPENAI_API_KEY")
+        base_url = os.getenv("OPENAI_BASE_URL")
 
         if not api_key:
-            return "Error: ANTHROPIC_API_KEY environment variable is not set"
+            return "Error: OPENAI_API_KEY environment variable is not set"
 
-        # Create LLM using browser-use's own ChatAnthropic (has provider attribute)
+        # Use ChatOpenAI with OpenAI-compatible relay endpoint
+        # Even for Claude models, relay services use /v1/chat/completions format
         llm_kwargs = {
             "model": model,
             "api_key": api_key,
@@ -44,7 +44,7 @@ async def browse_web(task: str, model: str = "claude-haiku-4-5-20251001", max_st
         if base_url:
             llm_kwargs["base_url"] = base_url
 
-        llm = ChatAnthropic(**llm_kwargs)
+        llm = ChatOpenAI(**llm_kwargs)
 
         # Create and run the browser agent
         agent = Agent(
@@ -62,16 +62,14 @@ async def browse_web(task: str, model: str = "claude-haiku-4-5-20251001", max_st
         if final_result:
             results.append(f"Final Result:\n{final_result}")
 
-        # Method 2: Scan all history items for extracted content and done results
+        # Method 2: Scan all history items for extracted content
         for i, item in enumerate(history.history):
             if item.result:
                 for r in item.result:
-                    if r.extracted_content:
+                    if r.extracted_content and "Navigated to" not in r.extracted_content:
                         results.append(f"Step {i} extracted:\n{r.extracted_content}")
-                    if r.is_done and hasattr(r, 'text') and r.text:
-                        results.append(f"Done text:\n{r.text}")
 
-        # Method 3: Collect model output memories and next_goals
+        # Method 3: Collect model output memories
         memories = []
         for item in history.history:
             if item.model_output:
@@ -84,7 +82,6 @@ async def browse_web(task: str, model: str = "claude-haiku-4-5-20251001", max_st
         elif memories:
             result_text = "No explicit result extracted, but the agent recorded:\n" + "\n".join(memories)
         else:
-            # Last resort: dump action history summary
             actions_summary = []
             for i, item in enumerate(history.history):
                 if item.model_output and item.model_output.action:
