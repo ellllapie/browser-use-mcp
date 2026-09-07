@@ -9,31 +9,32 @@ import asyncio
 import os
 from dotenv import load_dotenv
 from mcp.server.mcpserver import MCPServer
-from browser_use import Agent, ChatOpenAI
+from browser_use import Agent
+from langchain_anthropic import ChatAnthropic
 
 load_dotenv()
 
 mcp = MCPServer("browser-use-mcp")
 
 @mcp.tool()
-async def browse_web(task: str, model: str = "gpt-4.1-mini", max_steps: int = 100) -> str:
+async def browse_web(task: str, model: str = "claude-haiku-4-5-20251001", max_steps: int = 100) -> str:
     """Browse the web autonomously to complete a task. The AI agent will navigate pages, click elements, fill forms, and extract information as needed.
 
     Args:
         task: The task to complete (e.g., 'Find the latest news about AI', 'Go to example.com and extract pricing info')
-        model: LLM model to use (default: 'gpt-4.1-mini'). Examples: 'gpt-4.1-mini', 'gpt-4.1'
+        model: LLM model to use (default: 'claude-haiku-4-5-20251001'). Examples: 'claude-haiku-4-5-20251001', 'claude-sonnet-4-6', 'claude-sonnet-4-5'
         max_steps: Maximum number of steps to execute (default: 100)
     """
     if not task:
         return "Error: task parameter is required"
 
     try:
-        # Get OpenAI config from environment
-        api_key = os.getenv("OPENAI_API_KEY")
-        base_url = os.getenv("OPENAI_BASE_URL")
+        # Get Anthropic config from environment
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        base_url = os.getenv("ANTHROPIC_BASE_URL")
 
         if not api_key:
-            return "Error: OPENAI_API_KEY environment variable is not set"
+            return "Error: ANTHROPIC_API_KEY environment variable is not set"
 
         # Create LLM with custom base_url if provided (for relay services)
         llm_kwargs = {
@@ -43,7 +44,7 @@ async def browse_web(task: str, model: str = "gpt-4.1-mini", max_steps: int = 10
         if base_url:
             llm_kwargs["base_url"] = base_url
 
-        llm = ChatOpenAI(**llm_kwargs)
+        llm = ChatAnthropic(**llm_kwargs)
 
         # Create and run the browser agent
         agent = Agent(
